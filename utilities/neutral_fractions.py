@@ -1,30 +1,31 @@
 import numpy as np
+from astropy import units as U
 
-def molecular_frac(SFR, T, rho, Habundance, mu=1.22, proton_mass=1.6726219E-24, gamma=4./3., fH=0.752, T0=8.E3):
-    SFR = np.copy(SFR)
+def molecular_frac(SFR, T, rho, Habundance, mu=1.22, proton_mass=1.6726219E-24*U.g, gamma=4./3., fH=0.752, T0=8.E3*U.K):
+    SFR = U.quantity.Quantity(SFR, copy=True)
     P = rho * T / (mu * proton_mass)
-    rho0 = 0.1 * proton_mass / fH
+    rho0 = 0.1 * U.cm ** -3 * proton_mass / fH
     P0 = rho0 * T0 / (mu * proton_mass)
     P_jeans = P0 * np.power(rho / rho0, gamma)
     P_margin = np.log10(P / P_jeans)
     SFR[P_margin > .5] = 0
-    return np.where(SFR > 0, 1. / (1. + 1. / np.power(P / 4.3E4, .92)), 0.)
+    return np.where(SFR > 0, 1. / (1. + 1. / np.power(P / (4.3E4 * U.K * U.cm ** -3), .92)), 0.)
 
 #function below based on Rahmati+ 2013
-def neutral_frac(redshift, nH, T, onlyA1=False, noCol=False, onlyCol=False, SSH_Thresh=False, local=False, APOSTLE_corrections=False, SFR=None, mu=1.22, proton_mass=1.6726219E-24, gamma=4./3., fH=0.752, Habundance=None, T0=8.E3, rho=None):
+def neutral_frac(redshift, nH, T, onlyA1=False, noCol=False, onlyCol=False, SSH_Thresh=False, local=False, APOSTLE_corrections=False, SFR=None, mu=1.22, proton_mass=1.6726219E-24*U.g, gamma=4./3., fH=0.752, Habundance=None, T0=8.E3*U.K, rho=None):
 
     #APOSTLE pre-treatment for gas temperature
     if APOSTLE_corrections:
-        T = np.copy(T)
-        SFR = np.copy(SFR)
+        T = U.quantity.Quantity(T, copy=True)
+        SFR = U.quantity.Quantity(SFR, copy=True)
         P = rho * T / (mu * proton_mass)
-        rho0 = 0.1 * proton_mass / fH
+        rho0 = 0.1 * U.cm ** -3 * proton_mass / fH
         P0 = rho0 * T0 / (mu * proton_mass)
         P_jeans = P0 * np.power(rho / rho0, gamma)
         P_margin = np.log10(P / P_jeans)
         SFR[P_margin > .5] = 0
-        T_jeans = mu * Habundance * P_jeans * nH
-        T[np.logical_or(SFR > 0, np.logical_and(P_margin < .5, T_jeans > 1.E4))] = 1.E4
+        T_jeans = mu * Habundance * P_jeans / nH
+        T[np.logical_or(SFR > 0, np.logical_and(P_margin < .5, T_jeans > 1.E4 * U.K))] = 1.E4 * U.K
         
 
     # --------------------------------------------------------------------------------------------
@@ -169,39 +170,39 @@ def neutral_frac(redshift, nH, T, onlyA1=False, noCol=False, onlyCol=False, SSH_
         
     
     lg_n0     = lg_n0_lo     + dz * (lg_n0_hi     - lg_n0_lo)
-    n0        = np.power(1.0e1, lg_n0)
+    n0        = np.power(10, lg_n0) * U.cm ** -3
     gamma_uvb = gamma_uvb_lo + dz * (gamma_uvb_hi - gamma_uvb_lo)
     alpha1    = alpha1_lo    + dz * (alpha1_hi    - alpha1_lo)
     alpha2    = alpha2_lo    + dz * (alpha2_hi    - alpha2_lo)
     beta      = beta_lo      + dz * (beta_hi      - beta_lo)
     f         = f_lo         + dz * (f_hi         - f_lo)
 
-    gamma_ratio = (1.0e0 - f) * np.power(1.0e0 + np.power(nH / n0, beta), alpha1)
-    gamma_ratio = gamma_ratio + f * np.power(1.0e0 + nH / n0, alpha2)
+    gamma_ratio = (1.0 - f) * np.power(1.0 + np.power(nH / n0, beta), alpha1)
+    gamma_ratio = gamma_ratio + f * np.power(1.0 + nH / n0, alpha2)
     gamma_phot  = gamma_uvb * gamma_ratio
 
     if local:
         gamma_local = 1.3e-13 * np.power(nH, 0.2) * np.power(T / 1.0e4, 0.2)
         gamma_phot = gamma_phot + gamma_local
 
-    Lambda    = 315614.0e0 / T
-    AlphaA    = 1.269e-13 * np.power(Lambda, 1.503e0)
-    AlphaA    = AlphaA / np.power(1.0e0 + np.power(Lambda / 0.522e0, 0.470e0), 1.923e0)
-    LambdaT   = 1.17e-10 * np.sqrt(T) * np.exp(-157809.0e0 / T) / (1.0e0 + np.sqrt(T / 1.0e5))
+    Lambda    = 315614.0 * U.K / T
+    AlphaA    = 1.269e-13 * np.power(Lambda, 1.503)
+    AlphaA    = AlphaA / np.power(1.0 + np.power(Lambda / 0.522, 0.470), 1.923)
+    LambdaT   = 1.17e-10 * np.sqrt(T / U.K) * np.exp(-157809.0 * U.K / T) / (1.0 + np.sqrt(T / (1.0e5 * U.K)))
 
     if noCol:
-        LambdaT = 0.0e0
+        LambdaT = 0.0
     if onlyCol:
-        gamma_phot = 0.0e0
+        gamma_phot = 0.0
     
     A = AlphaA + LambdaT
-    B = 2.0e0 * AlphaA + (gamma_phot / nH) + LambdaT
-    sqrt_arg = np.power(B, 2) - 4.0e0 * A * AlphaA
-    sqrt_arg[sqrt_arg < 0.0e0] = 0.0e0
+    B = 2.0 * AlphaA + (gamma_phot * U.cm ** -3 / nH) + LambdaT
+    sqrt_arg = np.power(B, 2) - 4.0 * A * AlphaA
+    sqrt_arg[sqrt_arg < 0.0] = 0.0
     sqrt_term = np.sqrt(sqrt_arg)
-    f_neutral = (B - sqrt_term) / (2.0e0 * A)
+    f_neutral = (B - sqrt_term) / (2.0 * A)
 
     if SSH_Thresh:
-        f_neutral[nH > SSH_Thresh] = 1.0e0
+        f_neutral[nH > SSH_Thresh] = 1.0
 
     return f_neutral
