@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='utilities',
+    name='kyleaoman_utilities',
     version='0.1',
     description='Assorted personal functions and tools.',
     url='',
