@@ -3,7 +3,7 @@ import numpy as np
 import multiprocessing
 import os.path
 
-class hdf5_io():
+class _hdf5_io():
 
     def __init__(self, path, fbase):
         self.__path = path
@@ -27,7 +27,12 @@ class hdf5_io():
                 outputs = []
                 for parts in parts_split:
                     outputs.append(multiprocessing.Queue())
-                    procs.append(multiprocessing.Process(target=self.__subitem, args=(name,parts.tolist(), outputs[-1])))
+                    procs.append(
+                        multiprocessing.Process(
+                            target=self.__subitem, 
+                            args=(name,parts.tolist(), outputs[-1])
+                        )
+                    )
                     procs[-1].start()
                 items = []
                 for output in outputs:
@@ -43,7 +48,9 @@ class hdf5_io():
                 with h5py.File(part, 'r') as f:
                     items.append(f[name].value.copy())
         if not(items):
-            raise KeyError("Unable to open object (Object '" + name + "' doesn't exist in file with path '" + self.__path + "' and basename '" + self.__fbase + "')")
+            raise KeyError("Unable to open object (Object '" + name + \
+                           "' doesn't exist in file with path '" + self.__path + \
+                           "' and basename '" + self.__fbase + "')")
         else:
             return np.concatenate(items)
 
@@ -58,27 +65,30 @@ class hdf5_io():
                 fcount += 1
             return retval
         else:
-            raise IOError("Unable to open file (File with path '" + path + "' and basename '" + fbase + "' doesn't exist)")
+            raise IOError("Unable to open file (File with path '" + path + \
+                          "' and basename '" + fbase + "' doesn't exist)")
             
     def get_parts(self):
         return self.__parts
 
 def hdf5_get(path, fbase, hpath, attr=None):
     '''
-    path: path of simulation data (can be particle or group)
-    fbase: filename of data file (omit '.X.hdf5' portion)
-    hpath: path of data table to gather, e.g. 'PartType1/ParticleIDs'
+    path: directory containing hdf5 file
+    fbase: filename (omit '.X.hdf5' portion)
+    hpath: 'internal' path of data table to gather, e.g. '/PartType1/ParticleIDs'
     attr: name of attribute to fetch (optional)
     '''
     if not attr:
-        hdf5_file = hdf5_io(path, fbase)
+        hdf5_file = _hdf5_io(path, fbase)
         retval = hdf5_file[hpath]
         return retval
     else:
-        for fname in hdf5_io(path, fbase).get_parts():
+        for fname in _hdf5_io(path, fbase).get_parts():
             with h5py.File(fname, 'r') as f:
                 try:
                     return f[hpath].attrs[attr]
                 except KeyError:
                     continue
-        raise KeyError("Unable to open attribute (One of object '" + hpath + "' or attribute '" + attr + "' doesn't exist in file with path '" + path + "' and basename '" + fbase + "')")
+        raise KeyError("Unable to open attribute (One of object '" + hpath + \
+                       "' or attribute '" + attr + "' doesn't exist in file with path '" + path + \
+                       "' and basename '" + fbase + "')")
