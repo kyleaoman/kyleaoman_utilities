@@ -1,5 +1,4 @@
-from cPickle import load
-from cPickle import dump
+from pickle import load, dump
 
 def savevars(varlist, fname, mode='pickle'):
     if not fname[-4:] == '.pkl':

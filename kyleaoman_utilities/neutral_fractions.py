@@ -292,7 +292,7 @@ def neutral_frac(
         f_hi         =  0.01 
              
     else:
-        print "Invalid redshift > 5.0 or < 0.0"
+        print("Invalid redshift > 5.0 or < 0.0")
         raise ValueError
         
     
