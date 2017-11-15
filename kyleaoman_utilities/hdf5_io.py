@@ -84,7 +84,6 @@ def hdf5_get(path, fbase, hpath, attr=None, ncpu=0):
     hpath: 'internal' path of data table to gather, e.g. '/PartType1/ParticleIDs'
     attr: name of attribute to fetch (optional)
     '''
-    print(path, fbase, hpath, attr, ncpu)
     if not attr:
         hdf5_file = _hdf5_io(path, fbase, ncpu=ncpu)
         retval = hdf5_file[hpath]
