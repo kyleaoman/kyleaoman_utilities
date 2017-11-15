@@ -15,7 +15,10 @@ class _hdf5_io():
         accumulator = []
         for part in parts:
             with h5py.File(part, 'r') as f:
-                accumulator.append(f[name].value.copy())
+                try:
+                    accumulator.append(f[name].value.copy())
+                except KeyError:
+                    pass
         output.put(accumulator)
         return
 
@@ -30,7 +33,7 @@ class _hdf5_io():
                     procs.append(
                         multiprocessing.Process(
                             target=self.__subitem, 
-                            args=(name,parts.tolist(), outputs[-1])
+                            args=(name, parts.tolist(), outputs[-1])
                         )
                     )
                     procs[-1].start()
@@ -46,8 +49,11 @@ class _hdf5_io():
             items = []
             for part in self.__parts:
                 with h5py.File(part, 'r') as f:
-                    items.append(f[name].value.copy())
-        if not(items):
+                    try:
+                        items.append(f[name].value.copy())
+                    except KeyError:
+                        pass
+        if len(items) == 0:
             raise KeyError("Unable to open object (Object '" + name + \
                            "' doesn't exist in file with path '" + self.__path + \
                            "' and basename '" + self.__fbase + "')")
@@ -78,6 +84,7 @@ def hdf5_get(path, fbase, hpath, attr=None, ncpu=0):
     hpath: 'internal' path of data table to gather, e.g. '/PartType1/ParticleIDs'
     attr: name of attribute to fetch (optional)
     '''
+    print(path, fbase, hpath, attr, ncpu)
     if not attr:
         hdf5_file = _hdf5_io(path, fbase, ncpu=ncpu)
         retval = hdf5_file[hpath]
