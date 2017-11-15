@@ -5,11 +5,11 @@ import os.path
 
 class _hdf5_io():
 
-    def __init__(self, path, fbase):
+    def __init__(self, path, fbase, ncpu=0):
         self.__path = path
         self.__fbase = fbase
         self.__parts = self.__find_parts(self.__path, self.__fbase)
-        self.__nb_cpu = multiprocessing.cpu_count() - 1
+        self.__nb_cpu = multiprocessing.cpu_count() - 1 if ncpu == 0 else ncpu
 
     def __subitem(self, name, parts, output):
         accumulator = []
@@ -79,11 +79,11 @@ def hdf5_get(path, fbase, hpath, attr=None):
     attr: name of attribute to fetch (optional)
     '''
     if not attr:
-        hdf5_file = _hdf5_io(path, fbase)
+        hdf5_file = _hdf5_io(path, fbase, ncpu=ncpu)
         retval = hdf5_file[hpath]
         return retval
     else:
-        for fname in _hdf5_io(path, fbase).get_parts():
+        for fname in _hdf5_io(path, fbase, ncpu=ncpu).get_parts():
             with h5py.File(fname, 'r') as f:
                 try:
                     return f[hpath].attrs[attr]
