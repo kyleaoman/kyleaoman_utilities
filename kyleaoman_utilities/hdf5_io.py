@@ -71,7 +71,7 @@ class _hdf5_io():
     def get_parts(self):
         return self.__parts
 
-def hdf5_get(path, fbase, hpath, attr=None):
+def hdf5_get(path, fbase, hpath, attr=None, ncpu=0):
     '''
     path: directory containing hdf5 file
     fbase: filename (omit '.X.hdf5' portion)
