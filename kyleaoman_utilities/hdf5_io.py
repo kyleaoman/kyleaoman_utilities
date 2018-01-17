@@ -116,6 +116,8 @@ def hdf5_get(path, fbase, hpath, attr=None, ncpu=0, interval=None):
     fbase: filename (omit '.X.hdf5' portion)
     hpath: 'internal' path of data table to gather, e.g. '/PartType1/ParticleIDs'
     attr: name of attribute to fetch (optional)
+    ncpu: read in parallel with the given cpu count (0 -> all cpus, the default)
+    interval: read a subset of a dataset in the given interval (2-tuple) of indices
     '''
     if not attr:
         hdf5_file = _hdf5_io(path, fbase, ncpu=ncpu, interval=interval)
