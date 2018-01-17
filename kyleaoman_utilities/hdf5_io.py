@@ -7,14 +7,13 @@ import warnings
 class _hdf5_io():
 
     def __init__(self, path, fbase, ncpu=0, interval=False):
-        self.__path = path
-        self.__fbase = fbase
-        self.__parts = self.__find_parts(self.__path, self.__fbase)
-        self.__nb_cpu = multiprocessing.cpu_count() - 1 if ncpu == 0 else ncpu
-        self.__interval = interval
-        self.__nb_cpu = 1 if self.__interval != False else self.__nb_cpu
+        self._path = path
+        self._fbase = fbase
+        self._parts = self._find_parts(self._path, self._fbase)
+        self._nb_cpu = multiprocessing.cpu_count() - 1 if ncpu == 0 else ncpu
+        self._interval = interval
 
-    def __subitem(self, name, parts, output):
+    def _subitem(self, name, parts, output):
         accumulator = []
         for part in parts:
             with h5py.File(part, 'r') as f:
@@ -26,16 +25,18 @@ class _hdf5_io():
         return
 
     def __getitem__(self, name):
-        if self.__nb_cpu > 1:
+        if self._interval != False:
+            interval_parts = self._split_interval(name)
+        if self._nb_cpu > 1:
             try:
-                parts_split = np.array_split(self.__parts, self.__nb_cpu)
+                parts_split = np.array_split(self._parts, self._nb_cpu)
                 procs = []
                 outputs = []
                 for parts in parts_split:
                     outputs.append(multiprocessing.Queue())
                     procs.append(
                         multiprocessing.Process(
-                            target=self.__subitem, 
+                            target=self._subitem, 
                             args=(name, parts.tolist(), outputs[-1])
                         )
                     )
@@ -46,46 +47,61 @@ class _hdf5_io():
                 for p in procs:
                     p.join()
             except IOError:
-                self.__nb_cpu = 1 #fallback to serial mode
+                self._nb_cpu = 1 #fallback to serial mode
                 return self[name]
         else:
             items = []
-            start = 0
-            for part in self.__parts:
+            for pn, part in enumerate(self._parts):
                 with h5py.File(part, 'r') as f:
-                    if self.__interval == False:
+                    if self._interval == False:
                         try:
                             items.append(f[name].value.copy())
                         except KeyError:
                             pass
                     else:
-                        end = start + f[name].shape[0]
-                        if self.__interval[0] <= start:
-                            startslice = 0
-                        elif self.__interval[0] <= end:
-                            startslice = self.__interval[0] - start
-                        else:
-                            items.append(np.empty((0, ) + f[name].shape[1:]))
-                            start = end
+                        if interval_parts[pn] == False:
                             continue
-                        if self.__interval[1] >= end:
-                            endslice = end
-                        elif self.__interval[1] >= start:
-                            endslice = self.__interval[1] - start
                         else:
-                            items.append(np.empty((0, ) + f[name].shape[1:]))
-                            start = end
-                            continue
-                        items.append(f[name][startslice : endslice].copy())
-                        start = end
+                            startslice, endslice = interval_parts[pn]
+                            items.append(f[name][startslice : endslice].copy())
         if len(items) == 0:
             raise KeyError("Unable to open object (Object '" + name + \
-                           "' doesn't exist in file with path '" + self.__path + \
-                           "' and basename '" + self.__fbase + "')")
+                           "' doesn't exist in file with path '" + self._path + \
+                           "' and basename '" + self._fbase + "')")
         else:
             return np.concatenate(items)
 
-    def __find_parts(self, path, fbase):
+    def _split_interval(self, name):
+        slices = []
+        start = 0
+        for part in self._parts:
+            with h5py.File(part, 'r') as f:
+                try:
+                    end = start + f[name].shape[0]
+                except KeyError:
+                    slices.append(False)
+                    continue
+                if self._interval[0] <= start:
+                    startslice = 0
+                elif self._interval[0] <= end:
+                    startslice = self._interval[0] - start
+                else:
+                    slices.append(False)
+                    start = end
+                    continue
+                if self._interval[1] >= end:
+                    endslice = end
+                elif self._interval[1] >= start:
+                    endslice = self._interval[1] - start
+                else:
+                    slices.append(False)
+                    start = end
+                    continue
+                slices.append((startslice, endslice))
+                start = end
+        return slices
+        
+    def _find_parts(self, path, fbase):
         if os.path.exists(path + '/' + fbase + '.hdf5'):
             return [path + '/' + fbase + '.hdf5']
         elif os.path.exists(path + '/' + fbase + '.0.hdf5'):
@@ -100,7 +116,7 @@ class _hdf5_io():
                           "' and basename '" + fbase + "' doesn't exist)")
             
     def get_parts(self):
-        return self.__parts
+        return self._parts
 
 def hdf5_get(path, fbase, hpath, attr=None, ncpu=0, interval=False):
     '''
