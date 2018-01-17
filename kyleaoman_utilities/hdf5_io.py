@@ -24,21 +24,37 @@ class _hdf5_io():
         output.put(accumulator)
         return
 
+    def _subitem_interval(self, name, parts, output, intervals):
+        accumulator = []
+        for part, interval in zip(parts, intervals):
+            with h5py.File(part, 'r') as f:
+                accumulator.append(f[name][interval[0] : interval[1]].copy())
+        output.put(accumulator)
+        return
+            
+
     def __getitem__(self, name):
         if self._interval != False:
             interval_parts = self._split_interval(name)
         if self._nb_cpu > 1:
             try:
-                parts_split = np.array_split(self._parts, self._nb_cpu)
+                if self._interval == False:
+                    parts_split = np.array_split(self._parts, self._nb_cpu)
+                else:
+                    _parts = [p for p, i in zip(self._parts, interval_parts) if i != False]
+                    interval_parts = [i for i in interval_parts if i != False]
+                    parts_split = np.array_split(_parts, self._nb_cpu)
+                    interval_parts_split = np.array_split(interval_parts, self._nb_cpu)
                 procs = []
                 outputs = []
-                for parts in parts_split:
+                for pn, parts in enumerate(parts_split):
                     outputs.append(multiprocessing.Queue())
+                    target = self._subitem if self._interval == False else self._subitem_interval
+                    args = (name, parts.tolist(), outputs[-1])
+                    if self._interval != False:
+                        args = args + (interval_parts_split[pn].tolist(), )
                     procs.append(
-                        multiprocessing.Process(
-                            target=self._subitem, 
-                            args=(name, parts.tolist(), outputs[-1])
-                        )
+                        multiprocessing.Process(target=target, args=args)
                     )
                     procs[-1].start()
                 items = []
@@ -126,9 +142,6 @@ def hdf5_get(path, fbase, hpath, attr=None, ncpu=0, interval=False):
     attr: name of attribute to fetch (optional)
     '''
     if not attr:
-        if (interval != False) and (ncpu != 1):
-            warnings.warn("Using interval with hdf5_get must use ncpu=1, proceeding with serial execution.")
-            ncpu = 1
         hdf5_file = _hdf5_io(path, fbase, ncpu=ncpu, interval=interval)
         retval = hdf5_file[hpath]
         return retval
