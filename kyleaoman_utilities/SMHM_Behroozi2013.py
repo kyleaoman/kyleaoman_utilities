@@ -3,12 +3,11 @@ from scipy.optimize import fsolve
 import astropy.units as U
 
 def Mstar(Mh, z=0.0):
+    #note input should be Mvir as defined by Bryan & Norman 1998
     try:
         Mh = Mh.to(U.solMass) / U.solMass
-        had_units = True
     except AttributeError:
-        pass #assume value was given in solar masses
-    #note input should be Mvir as defined by Bryan & Norman 1998
+        pass #assume value was given in Msun
     a = 1 / (1 + z)
     nu = np.exp(-4 * np.power(a, 2))
     log10eps = -1.777 + (-.006 * (a - 1) + (-0) * z) * nu + (-0.119) * (a - 1)
@@ -21,8 +20,12 @@ def Mstar(Mh, z=0.0):
 
     log10Mstar = log10eps + log10M1 + f(np.log10(Mh) - log10M1) - f(0)
 
-    return np.power(10, log10Mstar) * {True: U.solMass, False: 1.}[had_units]
+    return np.power(10, log10Mstar) * U.solMass
 
 def Mh(Ms, z=0):
-    f = lambda M: np.log10(Mstar(np.power(10, M), z=z)) - np.log10(Ms)
-    return np.power(10, fsolve(f, x0=np.ones(Ms.shape)*12))
+    try:
+        Ms = Ms.to(U.solMass) / U.solMass
+    except AttributeError:
+        pass #assume value was given in Msun
+    f = lambda M: np.log10(Mstar(np.power(10, M), z=z).value) - np.log10(Ms)
+    return np.power(10, fsolve(f, x0=np.ones(Ms.shape)*12)) * U.solMass
