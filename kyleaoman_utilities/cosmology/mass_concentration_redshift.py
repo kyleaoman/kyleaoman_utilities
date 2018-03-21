@@ -30,8 +30,10 @@ def _zf(M0, CP=WMAP7()):
     f_zf = lambda x: _D(x, CP=CP) - np.power(np.power(_D(0, CP=CP), -1) + (.477 / (.15 * np.power(12 * np.pi, 2. / 3.) * np.power(CP.Om, 0.0055))) * np.sqrt(2 * (np.power(sigma(f * M0), 2) - np.power(sigma(M0), 2))), -1)
     return fsolve(f_zf, 2.)
 
+'''
 def chi(M0, CP=WMAP7()):
     return 1.211 + 1.858 * np.log10(1 + _zf(M0, CP=CP)) + 0.308 * np.power(CP.Ol, 2) - 0.032 * np.log10(M0 * CP.h / 1E11)
+'''
 
 def _sigma(M0, CP=WMAP7()):
     sigma0_tab, M_tab_s, M_tab_c, c_tab = _load_tables(CP=CP)

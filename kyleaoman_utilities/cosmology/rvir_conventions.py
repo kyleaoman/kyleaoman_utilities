@@ -10,9 +10,9 @@ def rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7(), c=None):
     f = lambda r_ratio: np.power(r_ratio, 3) - np.power(overdensity_ratio, -1) * (np.log(1 + c) - c / (1 + c)) / (np.log(1 + c / r_ratio) - c / (r_ratio + c))
     return fsolve(f, x0=1.0)
 
-def mvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7()):
+def mvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7(), c=None):
     overdensity_ratio = DeltaA * {'b': CP.Om, 'c': 1}[rel_toA] / (DeltaB * {'b': CP.Om, 'c': 1}[rel_toB])
-    r_ratio = rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=CP)
+    r_ratio = rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=CP, c=c)
     return overdensity_ratio * np.power(r_ratio, 3)
 
 def Delta_vir(z, CP=WMAP7()):
