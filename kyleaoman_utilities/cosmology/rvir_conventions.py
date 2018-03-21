@@ -4,7 +4,7 @@ from .params import WMAP7
 from .mass_concentration_redshift import c as concentration
 
 def rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7(), c=None):
-    if c == None:
+    if c is None:
         raise ValueError("Provide concentration parameter (kwarg 'c').")
     overdensity_ratio = DeltaA * {'b': CP.Om, 'c': 1}[rel_toA] / (DeltaB * {'b': CP.Om, 'c': 1}[rel_toB])
     f = lambda r_ratio: np.power(r_ratio, 3) - np.power(overdensity_ratio, -1) * (np.log(1 + c) - c / (1 + c)) / (np.log(1 + c / r_ratio) - c / (r_ratio + c))
