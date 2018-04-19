@@ -9,6 +9,6 @@ Useful python functions for various tasks, especially as dependencies for other 
    - run 'sudo pip install -e .' (-e installs via symlink, so pulling repository will do a 'live' update of the installation)
  - User install (Linux):
    - cd to directory with 'setup.py'
-   - ensure '~/lib/python2.7/site-packages' or similar is on your PYTHONPATH (e.g. 'echo $PYTHONPATH'), if not, add it (perhaps in .bash_profile or similar)
+   - ensure '~/lib/python3.6/site-packages' or similar is on your PYTHONPATH (e.g. 'echo $PYTHONPATH'), if not, add it (perhaps in .bash_profile or similar)
    - run 'pip install --prefix ~ -e .' (-e installs via symlink, so pulling repository will do a 'live' update of the installation)
  - cd to a directory outside the module and launch python; you should be able to do 'from kyleaoman_utilities import *'
