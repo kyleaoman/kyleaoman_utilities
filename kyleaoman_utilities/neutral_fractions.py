@@ -3,6 +3,7 @@ from astropy import units as U
 
 proton_mass = 1.6726219E-24 * U.g
 
+
 def atomic_frac(
         redshift, 
         nH, 
@@ -80,6 +81,7 @@ def atomic_frac(
         rho = rho
     )
 
+
 def molecular_frac(
         SFR, 
         T, 
@@ -126,7 +128,8 @@ def molecular_frac(
         0.
     )
 
-#function below based on Rahmati+ 2013
+
+# function below based on Rahmati+ 2013
 def neutral_frac(
         redshift, 
         nH, 
