@@ -1,5 +1,6 @@
 import os
 import psutil
+import resource
 
 prefixes = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']
 
@@ -12,3 +13,12 @@ def memnow():
         rss /= 1024
         ui += 1
     return '{:.1f} {:s}B'.format(rss, prefixes[ui])
+
+
+def memmax():
+    maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    ui = 1
+    while maxrss > 1024:
+        maxrss /= 1024
+        ui += 1
+    return '{:.1f} {:s}B'.format(maxrss, prefixes[ui])
