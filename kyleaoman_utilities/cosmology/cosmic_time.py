@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from astropy import units as U
-from params import WMAP7
+from .params import WMAP7
 
 def z_to_t(z_in, CP=WMAP7()):
     theta = np.sqrt(1 - CP.Om) * np.power(CP.Om * np.power(1.0 + z_in, 3.0) + (1 - CP.Om), -0.5)
