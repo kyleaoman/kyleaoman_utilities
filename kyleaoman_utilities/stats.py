@@ -28,7 +28,7 @@ def weighted_median(a, weights=None, axis=None):
 
 def weighted_nanmedian(a, weights=None, axis=None):
     if weights is None:
-        return np.nanmedian(a, **kwargs)
+        return np.nanmedian(a, axis=axis)
     elif axis is not None:
         raise NotImplementedError("'axis' kwarg not implemented.")
     else:
