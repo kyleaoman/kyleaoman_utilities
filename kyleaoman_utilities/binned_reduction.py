@@ -294,8 +294,8 @@ def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
         old = np.seterr(invalid='ignore')
         try:
             empty = tuple([[]] * len(values))
-            null = function(empty)
-        except (ValueError, RuntimeError):
+            null = function(*empty)
+        except (ValueError, RuntimeError, AttributeError):
             null = np.nan
         np.seterr(**old)
     result.fill(null)
