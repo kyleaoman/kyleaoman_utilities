@@ -7,7 +7,7 @@ from scipy._lib.six import callable
 from collections import namedtuple
 
 BinnedReduceResult = namedtuple('BinnedReduceResult',
-                                   ('reduction', 'bin_edges', 'binnumber'))
+                                ('reduction', 'bin_edges', 'binnumber'))
 
 
 def binned_reduce(x, values, function=None, bins=10, range=None):
@@ -54,7 +54,7 @@ def binned_reduce(x, values, function=None, bins=10, range=None):
         in which this observation falls. Array has the same length as values.
     See Also
     --------
-    numpy.histogram, scipy.stats.binned_statistic, 
+    numpy.histogram, scipy.stats.binned_statistic,
     binned_reduction, binned_reduction_2d, binned_reduction_dd
 
     Notes
@@ -82,7 +82,11 @@ def binned_reduce(x, values, function=None, bins=10, range=None):
 
     return BinnedReduceResult(reduction, edges[0], xy)
 
-BinnedReduce2dResult = namedtuple('BinnedReduce2dResult', ('reduction', 'x_edge', 'y_edge', 'binnumber'))
+
+BinnedReduce2dResult = namedtuple('BinnedReduce2dResult',
+                                  ('reduction', 'x_edge', 'y_edge',
+                                   'binnumber'))
+
 
 def binned_reduce_2d(x, y, values, function=None, bins=10, range=None):
     """
@@ -132,7 +136,7 @@ def binned_reduce_2d(x, y, values, function=None, bins=10, range=None):
         in which this observation falls. Array has the same length as `values`.
     See Also
     --------
-    numpy.histogram2d, scipy.stats.binned_statistic_2d, 
+    numpy.histogram2d, scipy.stats.binned_statistic_2d,
     binned_reduction, binned_reduction_dd
     """
 
@@ -146,12 +150,15 @@ def binned_reduce_2d(x, y, values, function=None, bins=10, range=None):
         xedges = yedges = np.asarray(bins, float)
         bins = [xedges, yedges]
 
-    reduction, edges, xy = binned_reduce_dd([x, y], values, function, bins, range)
+    reduction, edges, xy = binned_reduce_dd([x, y], values, function, bins,
+                                            range)
 
     return BinnedReduce2dResult(reduction, edges[0], edges[1], xy)
-    
 
-BinnedReduceddResult = namedtuple('BinnedReduceddResult', ('reduction', 'bin_edges', 'binnumber'))
+
+BinnedReduceddResult = namedtuple('BinnedReduceddResult',
+                                  ('reduction', 'bin_edges', 'binnumber'))
+
 
 def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
     """
@@ -287,8 +294,8 @@ def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
         old = np.seterr(invalid='ignore')
         try:
             empty = tuple([[]] * len(values))
-            null = function(empty)
-        except:
+            null = function(*empty)
+        except (ValueError, RuntimeError, AttributeError):
             null = np.nan
         np.seterr(**old)
     result.fill(null)
@@ -310,4 +317,3 @@ def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
         raise RuntimeError('Internal Shape Error')
 
     return BinnedReduceddResult(result, edges, xy)
-
