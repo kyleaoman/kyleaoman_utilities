@@ -1,7 +1,6 @@
 import numpy as np
 from astropy import units as U
-
-proton_mass = 1.6726219E-24 * U.g
+from astropy.constants import m_p as proton_mass
 
 
 def atomic_frac(
@@ -117,6 +116,9 @@ def molecular_frac(
     Returns an array of the same shape as particle property inputs containing
     the molecular mass fractions.
 
+    Based on the partitioning scheme of:
+    Blitz, L., & Rosolowski, E. 2006, ApJ, 650, 933.
+
     Kyle Oman c. December 2015, updated October 2017.
     """
 
@@ -156,10 +158,13 @@ def neutral_frac(
 
     """
     Computes particle neutral hydrogen fractions based on the fitting functions
-    of Rahmati et al. (2013a). By default, it uses the parameters of Table A1
-    (based on small cosmological volumes) for z > 1, and of Table A2 (based on
-    a 50Mpc volume) for z < 1, to better account for the effects of collisional
-    ionisation on the self-shielding density.
+    of:
+    Rahmati, A., Pawlik, A. H., Raicevic, M., & Schaye, J. 2013, MNRAS, 430,
+    2427.
+    By default, it uses the parameters of Table A1 (based on small cosmological
+    volumes) for z > 1, and of Table A2 (based on a 50Mpc volume) for z < 1, to
+    better account for the effects of collisional ionisation on the
+    self-shielding density.
 
     To compute neutral (HI + H_2) mass of particle, multiply NeutralFraction by
     Hydrogen mass fraction and particle mass.
