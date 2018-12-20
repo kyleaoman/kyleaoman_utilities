@@ -28,8 +28,8 @@ def L_align(xyz, vxyz, m, frac=.3, saverot=None, Laxis='z'):
     Nfrac = np.argmin(np.abs(mcumul - frac))
     Nfrac = np.max([Nfrac, 100])  # use a minimum of 100 particles
     Nfrac = np.min([Nfrac, len(m)])  # unless this exceeds particle count
-    p = p[:Nfrac]
-    L = L[:Nfrac]
+    p = p[:, :Nfrac]
+    L = L[:, :Nfrac]
     Ltot = np.sqrt(np.sum(np.power(np.sum(L, axis=1), 2)))
     Lhat = np.sum(L, axis=1) / Ltot
     zhat = Lhat / np.sqrt(np.sum(np.power(Lhat, 2)))  # normalized
