@@ -7,7 +7,6 @@ def atomic_frac(
         redshift,
         nH,
         T,
-        SFR,
         rho,
         Habundance,
         onlyA1=False,
@@ -16,6 +15,7 @@ def atomic_frac(
         SSH_Thresh=False,
         local=False,
         EAGLE_corrections=False,
+        SFR=None,
         mu=1.22,
         gamma=4./3.,
         fH=0.752,
@@ -57,10 +57,10 @@ def atomic_frac(
     """
 
     return (1. - molecular_frac(
-        SFR,
         T,
         rho,
-        Habundance,
+        EAGLE_corrections=EAGLE_corrections,
+        SFR=SFR,
         mu=mu,
         gamma=gamma,
         fH=fH,
@@ -87,11 +87,11 @@ def atomic_frac(
 
 
 def molecular_frac(
-        SFR,
         T,
         rho,
-        Habundance,
         mu=1.22,
+        EAGLE_corrections=False,
+        SFR=None,
         gamma=4./3.,
         fH=0.752,
         T0=8.0E3*U.K
@@ -104,14 +104,16 @@ def molecular_frac(
 
     All arguments should be passed with units as applicable, use astropy.units.
 
-    SFR:          Particle star formation rates.
-    T:            Particle temperatures.
-    rho:          Particle densities.
-    Habundance:   Particle Hydrogen mass fractions.
-    mu:           Mean molecular weight, default 1.22.
-    gamma:        Polytropic index, default 4/3.
-    fH:           Primordial hydrogen abundance, default 0.752.
-    T0:           EoS critical temperature, default 8000 K.
+    T:                 Particle temperatures.
+    rho:               Particle densities.
+    mu:                Mean molecular weight, default 1.22.
+    EAGLE_corrections: Determine which particles are on the EoS and adjust
+                       values accordingly.
+    SFR:               Particle star formation rates (required with
+                       EAGLE_corrections).
+    gamma:             Polytropic index, default 4/3.
+    fH:                Primordial hydrogen abundance, default 0.752.
+    T0:                EoS critical temperature, default 8000 K.
 
     Returns an array of the same shape as particle property inputs containing
     the molecular mass fractions.
@@ -121,22 +123,23 @@ def molecular_frac(
 
     Kyle Oman c. December 2015, updated October 2017.
     """
-
-    SFR = U.quantity.Quantity(SFR, copy=True)
     P = rho * T / (mu * proton_mass)
-    rho0 = 0.1 * U.cm ** -3 * proton_mass / fH
-    P0 = rho0 * T0 / (mu * proton_mass)
-    P_jeans = P0 * np.power(rho / rho0, gamma)
-    P_margin = np.log10(P / P_jeans)
-    SFR[P_margin > .5] = 0
-    return np.where(
-        SFR > 0,
-        1. / (1. + 1. / np.power(P / (4.3E4 * U.K * U.cm ** -3), .92)),
-        0.
-    )
+    if EAGLE_corrections:
+        SFR = U.quantity.Quantity(SFR, copy=True)
+        rho0 = 0.1 * U.cm ** -3 * proton_mass / fH
+        P0 = rho0 * T0 / (mu * proton_mass)
+        P_jeans = P0 * np.power(rho / rho0, gamma)
+        P_margin = np.log10(P / P_jeans)
+        SFR[P_margin > .5] = 0
+        return np.where(
+            SFR > 0,
+            1. / (1. + np.power(P / (4.3E4 * U.K * U.cm ** -3), -.92)),
+            0.
+        )
+    else:
+        return 1. / (1. + np.power(P / (4.3E4 * U.K * U.cm ** -3), -.92))
 
 
-# function below based on Rahmati+ 2013
 def neutral_frac(
         redshift,
         nH,
