@@ -10,20 +10,15 @@ def weighted_median(a, weights=None, axis=None):
         return np.median(a, axis=axis)
     elif axis is not None:
         raise NotImplementedError("'axis' kwarg not implemented.")
+    elif a.size == 0:
+        return np.nan
     else:
         a = a.flatten()
         weights = weights.flatten()
         isort = np.argsort(a)
         a = a[isort]
-        weights = weights[isort]
-        invweights = np.cumsum(weights[::-1])[::-1] / np.sum(weights)
         weights = np.cumsum(weights[isort]) / np.sum(weights)
-        if np.logical_or((weights == 0.5).any(), (invweights == 0.5).any()):
-            lwm = a[np.logical_and(weights >= .5, invweights == .5)][0]
-            uwm = a[np.logical_and(weights == .5, invweights >= .5)][-1]
-            return .5 * (lwm + uwm)
-        else:
-            return a[np.logical_and(weights >= .5, invweights >= .5)]
+        return np.interp(.5, weights, a)
 
 
 def weighted_nanmedian(a, weights=None, axis=None):
@@ -35,4 +30,4 @@ def weighted_nanmedian(a, weights=None, axis=None):
         a = a.flatten()
         weights = weights.flatten()
         mask = np.logical_not(np.logical_or(np.isnan(a), np.isnan(weights)))
-        return weighted_median(a[mask], weights[mask], **kwargs)
+        return weighted_median(a[mask], weights=weights[mask], axis=axis)
