@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from scipy._lib.six import callable
-from collections import namedtuple
+from collections import namedtuple, Sequence, basestring
 
 BinnedReduceResult = namedtuple('BinnedReduceResult',
                                 ('reduction', 'bin_edges', 'binnumber'))
@@ -300,7 +300,13 @@ def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
         np.seterr(**old)
     result.fill(null)
     for i in np.unique(xy):
-        result[i] = function(*tuple([v[xy == i] for v in values]))
+        f_evaluated = function(*tuple([v[xy == i] for v in values]))
+        if isinstance(f_evaluated, Sequence) \
+           and not isinstance(f_evaluated, basestring):
+            raise ValueError('binned_reduce_dd: function returned sequence, '
+                             'expected scalar (strings excepted).')
+        else:
+            result[i] = f_evaluated
 
     # Shape into a proper matrix
     result = result.reshape(np.sort(nbin))
