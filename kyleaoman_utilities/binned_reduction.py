@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 from scipy._lib.six import callable
-from collections import namedtuple, Sequence, basestring
+from collections import namedtuple, Sequence
 
 BinnedReduceResult = namedtuple('BinnedReduceResult',
                                 ('reduction', 'bin_edges', 'binnumber'))
@@ -302,7 +302,7 @@ def binned_reduce_dd(sample, values, function=None, bins=10, range=None):
     for i in np.unique(xy):
         f_evaluated = function(*tuple([v[xy == i] for v in values]))
         if isinstance(f_evaluated, Sequence) \
-           and not isinstance(f_evaluated, basestring):
+           and not isinstance(f_evaluated, str):
             raise ValueError('binned_reduce_dd: function returned sequence, '
                              'expected scalar (strings excepted).')
         else:
