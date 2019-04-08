@@ -1,7 +1,7 @@
 import h5py
 from os import path
 import numpy as np
-from simfiles.configs.C_EAGLE_cosma import suffix
+from simfiles.configs.C_EAGLE_virgo import suffix
 from astropy.cosmology import Planck13 as cosmo, z_at_value
 import astropy.units as U
 
@@ -23,10 +23,17 @@ def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc):
     return xyz
 
 
+def M_to_sigma(M):
+    return np.sqrt(3) * .00989 * U.km / U.s \
+        * np.power(M.to(U.Msun).value, 1 / 3)
+
+
 def host_mask(HL, Mrange=(0, np.inf), snap=-1, ret_inds=False,
               ret_interp_inds=False):
     if ret_interp_inds and not ret_inds:
         raise ValueError('ret_inds required for ret_interp_inds')
+    if snap < 0:
+        snap = len(HL.snap_times) + snap
     mask = np.logical_and(
         np.logical_and(
             np.logical_not(HL.SatFlag[:, snap]),
@@ -55,6 +62,36 @@ def sat_mask(HL, host, Rcut=3.35, snap=-1, ret_inds=False,
         < np.power(Rcut * host.R200[snap], 2)
     cube_mask[cube_mask] = sphere_mask  # refine to sphere
     mask = cube_mask
+    mask[host.ind] = False
+    inds = (np.where(mask)[0], ) if ret_inds else tuple()
+    interp_inds = (HL.interpGalaxyRevIndex[inds], ) if ret_interp_inds \
+        else tuple()
+    return (mask, ) + inds + interp_inds
+
+
+def inter_mask(HL, host, Rcut, Vcut, H=70. * U.km / U.s / U.Mpc, snap=-1,
+               ret_inds=False, ret_interp_inds=False):
+    if snap < 0:
+        snap = len(HL.snap_times) + snap
+    if ret_interp_inds and not ret_inds:
+        raise ValueError('ret_inds required for ret_interp_inds')
+    xyz = recentre(HL.Centre[:, snap], host.Centre[snap], Lbox=HL.Lbox)
+    vxyz = HL.Velocity[:, snap] - host.Velocity[snap]
+    prism_mask = np.logical_and(
+        (np.abs(xyz[:, :2]) < Rcut * host.R200[snap]).all(axis=-1),
+        np.abs(vxyz[:, 2] + H * xyz[:, 2]) < Vcut * M_to_sigma(host.M200[snap])
+    )
+    cylinder_mask = np.sum(np.power(xyz[prism_mask][:, :2], 2), axis=-1) \
+        < np.power(Rcut * host.R200[snap], 2)
+    prism_mask[prism_mask] = cylinder_mask  # refine to cylinder
+    cube_mask = (np.abs(xyz) < Rcut * host.R200[snap]).all(axis=-1)
+    sphere_mask = np.sum(np.power(xyz[cube_mask], 2), axis=-1) \
+        < np.power(Rcut * host.R200[snap], 2)
+    cube_mask[cube_mask] = sphere_mask  # refine to sphere
+    mask = np.logical_and(
+        np.logical_not(cube_mask),  # refined to sphere
+        prism_mask  # refined to cylinder
+    )
     mask[host.ind] = False
     inds = (np.where(mask)[0], ) if ret_inds else tuple()
     interp_inds = (HL.interpGalaxyRevIndex[inds], ) if ret_interp_inds \
@@ -145,9 +182,21 @@ class Sats(_Gal):
         return np.sum(self.ind)
 
 
+class Interlopers(_Gal):
+
+    def __init__(self, HL, ind, interp_ind=None):
+        super().__init__(HL, ind, interp_ind=interp_ind)
+        return
+
+    def __len__(self):
+        # will break if self.ind is not a bool mask
+        return np.sum(self.ind)
+
+
 class Host(_Gal):
 
-    def __init__(self, HL, ind, interp_ind=None, f_sat_mask=None):
+    def __init__(self, HL, ind, interp_ind=None, f_sat_mask=None,
+                 f_inter_mask=None):
         super().__init__(HL, ind, interp_ind=interp_ind)
         if f_sat_mask is not None:
             if interp_ind is not None:
@@ -158,10 +207,21 @@ class Host(_Gal):
             self.sats = Sats(
                 HL,
                 sm,
-                interp_ind=sat_interp_inds,
+                interp_ind=sat_interp_inds
             )
         else:
             self.sats = None
+        if f_inter_mask is not None:
+            if interp_ind is not None:
+                im, inter_inds, inter_interp_inds = f_inter_mask(self)
+            else:
+                im, inter_inds = f_inter_mask(self)
+                inter_interp_inds = None
+            self.interlopers = Interlopers(
+                HL,
+                im,
+                interp_ind=inter_interp_inds
+            )
         return
 
 
