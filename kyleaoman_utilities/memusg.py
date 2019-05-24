@@ -12,7 +12,7 @@ def memnow():
     while rss > 1024:
         rss /= 1024
         ui += 1
-    return '{:.1f} {:s}B'.format(rss, prefixes[ui])
+    return '{:.12f} {:s}B'.format(rss, prefixes[ui])
 
 
 def memmax():
