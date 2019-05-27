@@ -3,6 +3,7 @@ import astropy.units as U
 from astropy.coordinates import CartesianRepresentation, \
     SphericalRepresentation, CylindricalRepresentation, \
     CartesianDifferential, SphericalDifferential, CylindricalDifferential
+from astropy.units.core import UnitConversionError
 from itertools import product
 
 T = ['g', 'dm', 'b2', 'b3', 's', 'bh']
@@ -133,10 +134,11 @@ class EnhancedSO(SimObj):
         )
 
     def _vxyz(self, t, c):
-        return object.__getattribute__(
+        retval = object.__getattribute__(
             self._CR(t, diff=True).differentials['s'],
             'd_' + c
         )
+        return retval.to(U.km / U.s)
 
     def _cyl(self, t, c):
         return object.__getattribute__(
@@ -145,10 +147,17 @@ class EnhancedSO(SimObj):
         )
 
     def _vcyl(self, t, c):
-        return object.__getattribute__(
-            self._CyR(t, diff=True).differentials['s'],
+        CyR = self._CyR(t, diff=True)
+        retval = object.__getattribute__(
+            CyR.differentials['s'],
             'd_' + dict(R='rho').get(c, c)
         )
+        try:
+            return retval.to(
+                U.km / U.s, equivalencies=U.dimensionless_angles())
+        except UnitConversionError:
+            return (retval * CyR.rho).to(
+                U.km / U.s, equivalencies=U.dimensionless_angles())
 
     def _sph(self, t, c):
         return object.__getattribute__(
@@ -156,7 +165,14 @@ class EnhancedSO(SimObj):
         )
 
     def _vsph(self, t, c):
-        return object.__getattribut__(
-            self._SR(t, diff=True).differentials['s'],
+        SR = self._SR(t, diff=True)
+        retval = object.__getattribut__(
+            SR.differentials['s'],
             'd_' + dict(r='distance'.get(c, c))
         )
+        try:
+            return retval.to(
+                U.km / U.s, equivalencies=U.dimensionless_angles())
+        except UnitConversionError:
+            return (retval * SR.distance).to(
+                U.km / U.s, equivalencies=U.dimensionless_angles())
