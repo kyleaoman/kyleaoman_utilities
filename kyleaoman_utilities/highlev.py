@@ -23,8 +23,12 @@ def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc):
     return xyz
 
 
-def M_to_sigma(M):
-    return np.sqrt(3) * .00989 * U.km / U.s \
+def M_to_sigma(M, mode='3D'):
+    if mode == '3D':
+        prefac = np.sqrt(3)
+    elif mode == '1D':
+        prefac = 1.
+    return prefac * .00989 * U.km / U.s \
         * np.power(M.to(U.Msun).value, 1 / 3)
 
 
