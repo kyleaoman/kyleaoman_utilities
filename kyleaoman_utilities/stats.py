@@ -37,19 +37,58 @@ def weighted_nanmedian(a, weights=None, axis=None):
         return weighted_median(a[mask], weights=weights[mask], axis=axis)
 
 
-def binomial_CI(f, N, CL=0.8413, S=1):
+def binomial_CI(f, N, CL=None, S=None, twosided=True):
     """
-    Determines the 1-sided binomial confidence limit for confidence
-    level given by CL (default is for gaussian 1-sigma). S is the
-    number of Gaussian sigma's corresponding to CL (could calculate this
-    internally, but laziness prevails).
-    f is a measured fraction, N is the total count. This CL is useful for
-    cases when I want an error on a fraction from finite counts. For instance,
-    100 measurements, 55 are positive, then f=.55, N=100, and the result is
-    .55(-.055)(+.054) for a 1-sigma CL.
+    Determines the 1-sided or 2-sided binomial confidence limits.
 
-    See 1986ApJ...303..336G.
+    Determines the 1-sided or 2-sided binomial confidence limits for
+    confidence level given by CL (default is for gaussian 1-sigma).
+    f is a measured fraction, N is the total count; since these arise from
+    finite counts the product should be an integer! This CL is useful for
+    cases when an error on a fraction from finite counts is needed. For
+    instance, 100 measurements, 55 are positive, then f=.55, N=100, and the 
+    result is .55(-.055)(+.054) for a 1-sigma two-sided CL. All numerical
+    arguments may be arrays and will use normal numpy array broadcasting.
+
+    Parameters
+    ----------
+    f : float
+        Fraction of events which are of type 1.
+    N : int
+        Total event count of types 1 and 2.
+    CL : float
+        Confidence level, e.g. .95 for 95%. Provide CL or S, not both.
+    S : float
+        Confidence level, in number of Gaussian sigmas, e.g. S=1 is .68 (two-
+        sided) or .84 (1-sided). Provide CL or S, not both.
+    twosided : bool
+        If True, calculate a confidence interval. If False, calculate upper
+        and lower limits instead (usually use one or the other as appropriate 
+        in this case).
+
+    Returns
+    -------
+    out : tuple
+        A 2-tuple containing the (lower, upper) bounds of the confidence
+        interval, or the (lower, upper) limits.
+
+    Notes
+    -----
+    See NASA ADS reference 1986ApJ...303..336G.
     """
+
+    from scipy.special import erf, erfinv
+
+    if ((CL is not None) and (S is not None)) or \
+       ((CL is None) and (S is None)):
+        raise ValueError('Provide CL or S (and not both).')
+
+    if CL is not None:
+        if twosided:
+            CL = (1 + CL) / 2  # get equivalent one-sided value
+        S = np.abs(np.sqrt(2) * erfinv(2 * CL - 1))
+    else:  # S is not None
+        CL = erf(S / np.sqrt(2)) / 2 + .5  # one-sided
 
     scl = all([not hasattr(arg, '__iter__') for arg in (f, N, CL, S)])
 
