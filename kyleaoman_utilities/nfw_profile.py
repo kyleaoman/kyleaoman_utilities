@@ -1,5 +1,5 @@
 import numpy as np
-from .cosmology.params import WMAP7
+from astropy.cosmology import WMAP7
 from .cosmology.mass_concentration_redshift import c
 import astropy.constants as C
 import astropy.units as U
@@ -11,7 +11,7 @@ import astropy.units as U
 
 class NFW(object):
 
-    def __init__(self, M200, z=0., CP=WMAP7(), c200=None):
+    def __init__(self, M200, z=0., CP=WMAP7, c200=None):
         try:
             self.M200 = M200.to(U.solMass)
         except AttributeError:
