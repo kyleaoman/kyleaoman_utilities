@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import fsolve
-from astropy.cosmology import WMAP7
+from astropy.cosmology import WMAP7, FlatLambdaCDM
 
 
 def rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7, c=None):
@@ -31,6 +31,8 @@ def mvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7, c=None):
 
 def Delta_vir(z, CP=WMAP7):
     # Bryan & Norman (1998)
-    x = -np.power(1 + CP.Om0 / CP.Ode0 * np.power(1 + z, 3), -1)
+    if not isinstance(CP, FlatLambdaCDM):
+        raise ValueError('Delta_vir only valid for flat cosmologies.')
+    x = CP.Om0 * np.power(1 + z, 3) * np.power(CP.efunc(z), -2) - 1
     delta_c = 18. * np.power(np.pi, 2) + 82. * x - 39. * np.power(x, 2)
-    return delta_c / CP.Om0  # delta_b
+    return delta_c / CP.Om(z)  # delta_b
