@@ -46,7 +46,7 @@ def binomial_CI(f, N, CL=None, S=None, twosided=True):
     f is a measured fraction, N is the total count; since these arise from
     finite counts the product should be an integer! This CL is useful for
     cases when an error on a fraction from finite counts is needed. For
-    instance, 100 measurements, 55 are positive, then f=.55, N=100, and the 
+    instance, 100 measurements, 55 are positive, then f=.55, N=100, and the
     result is .55(-.055)(+.054) for a 1-sigma two-sided CL. All numerical
     arguments may be arrays and will use normal numpy array broadcasting.
 
@@ -63,7 +63,7 @@ def binomial_CI(f, N, CL=None, S=None, twosided=True):
         sided) or .84 (1-sided). Provide CL or S, not both.
     twosided : bool
         If True, calculate a confidence interval. If False, calculate upper
-        and lower limits instead (usually use one or the other as appropriate 
+        and lower limits instead (usually use one or the other as appropriate
         in this case).
 
     Returns
