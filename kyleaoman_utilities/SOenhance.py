@@ -166,9 +166,9 @@ class EnhancedSO(SimObj):
 
     def _vsph(self, t, c):
         SR = self._SR(t, diff=True)
-        retval = object.__getattribut__(
+        retval = object.__getattribute__(
             SR.differentials['s'],
-            'd_' + dict(r='distance'.get(c, c))
+            'd_' + dict(r='distance').get(c, c)
         )
         try:
             return retval.to(
