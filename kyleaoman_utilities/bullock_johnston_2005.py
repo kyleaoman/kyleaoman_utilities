@@ -6,7 +6,7 @@ from astropy.cosmology import FlatLambdaCDM
 
 def ax3(arr):
     _ax3 = (np.argwhere(np.array(arr.shape) == 3)).flatten()
-    if (_ax3.size != 1) or (arr.dim != 2):
+    if (_ax3.size != 1) or (arr.ndim != 2):
         raise ValueError('arr must have shape (3, N) or (N, 3) and N!=3.')
     else:
         return _ax3[0]
@@ -92,7 +92,7 @@ class BJHalo(object):
         _ax3 = ax3(xyz)
         r = np.sqrt(np.sum(np.power(xyz, 2), axis=_ax3))
         R = np.sqrt(np.sum(np.power(np.take(xyz, (0, 1), _ax3), 2), axis=_ax3))
-        Z = np.take(xyz, (2, ), _ax3)
+        Z = np.take(xyz, (2, ), _ax3).flatten()
         _Phi_halo = self.Phi_halo(r, a=a)
         _Phi_disk = self.Phi_disk(R, Z, a=a)
         _Phi_sphere = self.Phi_sphere(r, a=a)
@@ -102,7 +102,8 @@ class BJHalo(object):
         if xyz.shape != vxyz.shape:
             raise ValueError('xyz and vxyz must have same shape.')
         _ax3 = ax3(xyz)
-        return 0.5 * np.sum(np.power(vxyz, 2), axis=_ax3) + self.Phi(xyz, a=a)
+        _E = 0.5 * np.sum(np.power(vxyz, 2), axis=_ax3) + self.Phi(xyz, a=a)
+        return _E.to(U.km **2 * U.s ** -2)
 
     def Lz(self, xyz, vxyz):
         if xyz.shape != vxyz.shape:
@@ -110,8 +111,9 @@ class BJHalo(object):
         _ax3 = ax3(xyz)
         r = np.sqrt(np.sum(np.power(xyz, 2), axis=_ax3))
         R = np.sqrt(np.sum(np.power(np.take(xyz, (0, 1), _ax3), 2), axis=_ax3))
-        rhat = xyz / r
+        rhat = xyz / np.expand_dims(r, _ax3)
         zhat = np.array([0, 0, 1])
         phihat = np.cross(rhat, zhat, axis=-_ax3)
         vphi = np.sum(phihat * vxyz, axis=_ax3)
-        return np.power(R, 2) * vphi
+        _Lz = np.power(R, 2) * vphi
+        return _Lz.to(U.kpc ** 2 * U.km * U.s ** -1)
