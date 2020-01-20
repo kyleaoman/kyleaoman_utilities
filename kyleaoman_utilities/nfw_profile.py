@@ -1,10 +1,10 @@
 import numpy as np
 from astropy.cosmology import WMAP7
-from .cosmology.mass_concentration_redshift import c
+from kyleaoman_utilities.cosmology.mass_concentration_redshift import c
 import astropy.constants as C
 import astropy.units as U
 
-# UNITS FIXED: kpc, Msun, km/s
+# UNITS ASSUMED: kpc, Msun, km/s; also works if other units provided explicitly
 
 # NFW PROFILE PARAMETERS DERIVED FROM MASS (M below is M200c)
 
