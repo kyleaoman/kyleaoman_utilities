@@ -6,8 +6,7 @@ from astropy.cosmology import WMAP7, FlatLambdaCDM
 def rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7, c=None):
     if c is None:
         raise ValueError("Provide concentration parameter (kwarg 'c').")
-    if np.isnan(c):
-        return np.nan
+
     overdensity_ratio = DeltaA * {'b': CP.Om0, 'c': 1}[rel_toA] / \
         (DeltaB * {'b': CP.Om0, 'c': 1}[rel_toB])
 
@@ -21,7 +20,7 @@ def rvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7, c=None):
         guess = np.ones((c * DeltaA * DeltaB).shape)
     except AttributeError:
         guess = 1.0
-    return fsolve(f, x0=guess)
+    return np.where(np.isnan(c), np.nan, fsolve(f, x0=guess))
 
 
 def mvir_ratio(DeltaA, rel_toA, DeltaB, rel_toB, CP=WMAP7, c=None):
