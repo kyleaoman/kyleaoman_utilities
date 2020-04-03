@@ -80,7 +80,7 @@ def mom_maps(fout, fitsfile, crop=0, label='', Sigma_lim=19.5,
     ang_bottom = _getsep(coord_bottom, coord_centre)
     ang_top = _getsep(coord_top, coord_centre)
 
-    fig = pp.figure(1, figsize=(9, 6))
+    fig = pp.figure(1, figsize=(9, 3.6))
     pp.clf()
     sps = [fig.add_subplot(1, 3, i, projection=world_coords)
            for i in range(1, 4)]
