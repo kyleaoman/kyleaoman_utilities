@@ -13,7 +13,7 @@ def _replace_invalid(arr, val, rep):
 
 def _to_proper(d, a):
     shape = [si if si == len(a) else 1 for si in d.shape]
-    return d / a.reshape(shape)
+    return d * a.reshape(shape)
 
 
 def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc):
@@ -346,9 +346,7 @@ class HighLev(object):
                 self._data[k] = self._format_data(k, pf[k[6:]])
         else:
             raise KeyError('Unknown key {:s}.'.format(k))
-        if k in {'R200', 'Centre', 'StellarHalfMassRad'}:
-            self._data[k] = _to_proper(self._data[k], self.snap_scales)
-        elif k in {'interpInterpolatedPositions'}:
+        if k in {'interpInterpolatedPositions'}:
             interp_z = np.array([z_at_value(cosmo.age, t)
                                  for t in self.interpInterpolationTimes])
             self._data[k] = _to_proper(self._data[k], 1 / (1 + interp_z))
@@ -420,4 +418,3 @@ class HighLev(object):
     def values(self):
         self._load_all()
         return self._data.values()
-
