@@ -377,7 +377,7 @@ class HighLev(object):
                 self._data[k] = self._format_data(k, pf[k[6:]])
         else:
             raise KeyError('Unknown key {:s}.'.format(k))
-        if k in {'snepCoordinates'}:
+        if k in {'snepCoordinates', 'snepCoordinateDispersion'}:
             self._data[k] = _to_proper(self._data[k], self.snep_scales) / self.h
 
     def _load_all(self):
