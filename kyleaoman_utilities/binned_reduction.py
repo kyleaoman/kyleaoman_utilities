@@ -3,7 +3,7 @@ from __future__ import division, print_function, absolute_import
 import warnings
 
 import numpy as np
-from scipy._lib.six import callable
+from six import callable
 from collections import namedtuple, Sequence
 
 BinnedReduceResult = namedtuple('BinnedReduceResult',
