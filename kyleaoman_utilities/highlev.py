@@ -3,6 +3,7 @@ from os import path
 import numpy as np
 from astropy.cosmology import Planck13 as cosmo, z_at_value
 import astropy.units as U
+from kyleaoman_utilities.cosmology.rvir_conventions import Delta_vir
 
 
 def _replace_invalid(arr, val, rep):
@@ -42,13 +43,22 @@ def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc, a=None):
     return _to_proper(xyz, a)
 
 
-def M_to_sigma(M, mode='3D'):
+def M_to_sigma(M, z=0, mode='3D'):
     if mode == '3D':
-        prefac = np.sqrt(3)
+        ndim_scale = np.sqrt(3)
     elif mode == '1D':
-        prefac = 1.
-    return prefac * .00989 * U.km / U.s \
-        * np.power(M.to(U.Msun).value, 1 / 3)
+        ndim_scale = 1.
+    # return prefac * .00989 * U.km / U.s \
+    #     * np.power(M.to(U.Msun).value, 1 / 3)
+    # Note: Delta_vir returns the overdensity in units of background,
+    # which is Delta_c * Om in B&N98 notation.
+    return 0.016742 * U.km * U.s ** -1 * np.power(
+        np.power(M.to(U.Msun).value, 2)
+        * Delta_vir(z) / Delta_vir(0)
+        * cosmo.Om(z) / cosmo.Om0
+        * np.power(cosmo.H(z) / cosmo.H0, 2),
+        1 / 6
+    ) / ndim_scale
 
 
 def host_mask(HL, Mrange=(0, np.inf), snap=-1, ret_inds=False,
