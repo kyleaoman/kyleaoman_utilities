@@ -33,7 +33,8 @@ class EnhancedSO(SimObj):
             simfiles_configfile=None,
             simfiles_instance=None,
             verbose=False,
-            ncpu=2
+            ncpu=2,
+            grouping_ratio=1
 
     ):
         self._init_enhancers()
@@ -47,7 +48,8 @@ class EnhancedSO(SimObj):
             simfiles_configfile=simfiles_configfile,
             simfiles_instance=simfiles_instance,
             verbose=verbose,
-            ncpu=ncpu
+            ncpu=ncpu,
+            grouping_ratio=grouping_ratio
         )
 
         return

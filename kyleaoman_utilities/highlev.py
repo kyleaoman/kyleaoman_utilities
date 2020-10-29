@@ -1,9 +1,9 @@
 import h5py
 from os import path
 import numpy as np
-from simfiles.configs.C_EAGLE_virgo import suffix
 from astropy.cosmology import Planck13 as cosmo, z_at_value
 import astropy.units as U
+from kyleaoman_utilities.cosmology.rvir_conventions import Delta_vir
 
 
 def _replace_invalid(arr, val, rep):
@@ -12,24 +12,53 @@ def _replace_invalid(arr, val, rep):
 
 
 def _to_proper(d, a):
+    if np.array(a).size == 1:
+        return d * a
+    shape = [si if si == len(a) else 1 for si in d.shape]
+    return d * a.reshape(shape)
+
+
+def _to_comoving(d, a):
+    if np.array(a).size == 1:
+        return d / a
     shape = [si if si == len(a) else 1 for si in d.shape]
     return d / a.reshape(shape)
 
 
-def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc):
+def recentre(xyz, centre=np.zeros(3) * U.Mpc, Lbox=100 * U.Mpc, a=None):
+    if a is None:
+        raise ValueError('recentre requires comoving coordinates, '
+                         'provide (array of) scale factor')
+    xyz = _to_comoving(xyz, a)
+    if centre.ndim == 1 and np.array(a).size > 1:
+        centre = _to_comoving(
+            np.repeat(centre[np.newaxis], a.size, axis=0),
+            a
+        )
+    else:
+        centre = _to_comoving(centre, a)
     xyz = xyz - centre
     xyz[xyz < -Lbox / 2.] += Lbox
     xyz[xyz > Lbox / 2.] -= Lbox
-    return xyz
+    return _to_proper(xyz, a)
 
 
-def M_to_sigma(M, mode='3D'):
+def M_to_sigma(M, z=0, mode='3D'):
     if mode == '3D':
-        prefac = np.sqrt(3)
+        ndim_scale = np.sqrt(3)
     elif mode == '1D':
-        prefac = 1.
-    return prefac * .00989 * U.km / U.s \
-        * np.power(M.to(U.Msun).value, 1 / 3)
+        ndim_scale = 1.
+    # return prefac * .00989 * U.km / U.s \
+    #     * np.power(M.to(U.Msun).value, 1 / 3)
+    # Note: Delta_vir returns the overdensity in units of background,
+    # which is Delta_c * Om in B&N98 notation.
+    return 0.016742 * U.km * U.s ** -1 * np.power(
+        np.power(M.to(U.Msun).value, 2)
+        * Delta_vir(z) / Delta_vir(0)
+        * cosmo.Om(z) / cosmo.Om0
+        * np.power(cosmo.H(z) / cosmo.H0, 2),
+        1 / 6
+    ) / ndim_scale
 
 
 def host_mask(HL, Mrange=(0, np.inf), snap=-1, ret_inds=False,
@@ -60,7 +89,8 @@ def sat_mask(HL, host, Rcut=3.35, snap=-1, ret_inds=False,
         snap = len(HL.snap_times) + snap
     if ret_interp_inds and not ret_inds:
         raise ValueError('ret_inds required for ret_interp_inds')
-    xyz = recentre(HL.Centre[:, snap], host.Centre[snap], Lbox=HL.Lbox)
+    xyz = recentre(HL.Centre[:, snap], host.Centre[snap], Lbox=HL.Lbox,
+                   a=HL.snap_scales[snap])
     cube_mask = (np.abs(xyz) < Rcut * host.R200[snap]).all(axis=-1)
     sphere_mask = np.sum(np.power(xyz[cube_mask], 2), axis=-1) \
         < np.power(Rcut * host.R200[snap], 2)
@@ -79,7 +109,8 @@ def inter_mask(HL, host, Rcut, Vcut, H=70. * U.km / U.s / U.Mpc, snap=-1,
         snap = len(HL.snap_times) + snap
     if ret_interp_inds and not ret_inds:
         raise ValueError('ret_inds required for ret_interp_inds')
-    xyz = recentre(HL.Centre[:, snap], host.Centre[snap], Lbox=HL.Lbox)
+    xyz = recentre(HL.Centre[:, snap], host.Centre[snap], Lbox=HL.Lbox,
+                   a=HL.snap_scales[snap])
     vxyz = HL.Velocity[:, snap] - host.Velocity[snap]
     prism_mask = np.logical_and(
         (np.abs(xyz[:, :2]) < Rcut * host.R200[snap]).all(axis=-1),
@@ -160,7 +191,7 @@ class _Gal(object):
             else:
                 raise ValueError('Host requires interp_ind for interpolated'
                                  ' values.')
-        elif k in (self.HL.prop_keys | self.HL.pos_keys | self.HL.snip_keys):
+        elif k in (self.HL.prop_keys | self.HL.pos_keys | self.HL.snep_keys):
             return self.HL[k][self.ind]
         else:
             raise KeyError
@@ -168,7 +199,7 @@ class _Gal(object):
     def __getattribute__(self, name):
         if name in object.__getattribute__(self, 'HL').pos_keys | \
            object.__getattribute__(self, 'HL').prop_keys | \
-           object.__getattribute__(self, 'HL').snip_keys | \
+           object.__getattribute__(self, 'HL').snep_keys | \
            object.__getattribute__(self, 'HL').interp_keys:
             return self.__getitem__(name)
         else:
@@ -235,12 +266,7 @@ class HighLev(object):
                      18, 21, 22, 24, 25, 28, 29)
 
     Lbox = 3200 * U.Mpc
-
-    _snap_redshifts = [s.split('z')[-1].split('p') for s in suffix]
-    snap_redshifts = np.array([float(s[0]) + .001 * float(s[1])
-                               for s in _snap_redshifts])
-    snap_scales = 1 / (1 + snap_redshifts)
-    snap_times = cosmo.age(snap_redshifts)
+    h = .6777
 
     _units = dict(
         M200=U.Msun,
@@ -259,10 +285,10 @@ class HighLev(object):
         VmaxRadius=U.Mpc,
         Centre=U.Mpc,
         Velocity=U.km * U.s ** -1,
-        snipCoordinateDispersion=U.Mpc,
-        snipCoordinates=U.Mpc,
-        snipVelocity=U.km * U.s ** -1,
-        snipVelocityDispersion=U.km * U.s ** -1,
+        snepCoordinateDispersion=U.Mpc,
+        snepCoordinates=U.Mpc,
+        snepVelocity=U.km * U.s ** -1,
+        snepVelocityDispersion=U.km * U.s ** -1,
         interpInterpolatedPositions=U.Mpc,
         interpInterpolationTimes=U.Gyr,
         MHI=U.Msun,
@@ -294,8 +320,8 @@ class HighLev(object):
 
     pos_keys = {'Centre', 'Velocity'}
 
-    snip_keys = {'snipCoordinateDispersion', 'snipCoordinates',
-                 'snipVelocity', 'snipVelocityDispersion'}
+    snep_keys = {'snepCoordinateDispersion', 'snepCoordinates',
+                 'snepVelocity', 'snepVelocityDispersion'}
 
     interp_keys = {'interpGalaxy', 'interpGalaxyRevIndex',
                    'interpInterpolatedPositions',
@@ -305,14 +331,29 @@ class HighLev(object):
 
         self._base_dir = '/virgo/simulations/Hydrangea/10r200/CE-{:.0f}/'\
             'HYDRO/highlev/'.format(CE)
-        # self._propfile = path.join(self._base_dir, 'FullGalaxyTables.hdf5')
-        self._propfile = '/u/kyo/C-EAGLE_mHI/Data/CE{:02d}/'\
-                         'FullGalaxyTables.hdf5'.format(CE)
+        self._propfile = path.join(self._base_dir, 'FullGalaxyTables.hdf5')
         self._posfile = path.join(self._base_dir, 'GalaxyPositionsSnap.hdf5')
-        self._snipfile = path.join(self._base_dir, 'GalaxyPaths.hdf5')
-        self._interp_file = '/virgo/scratch/ybahe/HYDRANGEA/ANALYSIS/10r200/'\
-                            'CE-{:.0f}/HYDRO/highlev/'\
-                            'GalaxyCoordinates10Myr.hdf5'.format(CE)
+        self._snepfile = path.join(self._base_dir, 'GalaxyPaths.hdf5')
+        self._interp_file = path.join(self._base_dir, 'GalaxyCoordinates10Myr.hdf5')
+        with h5py.File(self._snepfile, 'r') as f:
+            self.snep_redshifts = np.array([
+                f['Snepshot_{:04d}'.format(sn_i)].attrs['Redshift'][0]
+                for sn_i in f['RootIndex/Basic']
+            ])
+            self.snap_redshifts = np.array([
+                f['Snepshot_{:04d}'.format(sn_i)].attrs['Redshift'][0]
+                for sn_i in f['SnapshotIndex']
+            ])
+            self.snip_redshifts = np.array([
+                f['Snepshot_{:04d}'.format(sn_i)].attrs['Redshift'][0]
+                for sn_i in f['SnipshotIndex']
+            ])
+            self.snap_scales = 1 / (1 + self.snap_redshifts)
+            self.snap_times = cosmo.age(self.snap_redshifts)
+            self.snip_scales = 1 / (1 + self.snip_redshifts)
+            self.snip_times = cosmo.age(self.snip_redshifts)
+            self.snep_scales = 1 / (1 + self.snep_redshifts)
+            self.snep_times = cosmo.age(self.snep_redshifts)
         self._data = dict()
         return
 
@@ -326,19 +367,19 @@ class HighLev(object):
             data *= self._units[k]
         return data
 
-    def _load(self, k, snipset='Basic'):
+    def _load(self, k, snepset='Basic'):
         if k in self.prop_keys:
             with h5py.File(self._propfile, 'r') as pf:
                 self._data[k] = self._format_data(k, pf[k])
         elif k in self.pos_keys:
             with h5py.File(self._posfile, 'r') as pf:
                 self._data[k] = self._format_data(k, pf[k])
-        elif k in self.snip_keys:
-            with h5py.File(self._snipfile, 'r') as pf:
-                sniplist = np.array(pf['/RootIndex/'+snipset])
+        elif k in self.snep_keys:
+            with h5py.File(self._snepfile, 'r') as pf:
+                sneplist = np.array(pf['/RootIndex/'+snepset])
                 parts = [np.array(
                     pf['Snepshot_{:04d}/{:s}'.format(s, k[4:])]
-                )[:, np.newaxis] for s in sniplist]
+                )[:, np.newaxis] for s in sneplist]
                 data = np.concatenate(parts, axis=1)
                 self._data[k] = self._format_data(k, data)
         elif k in self.interp_keys:
@@ -346,12 +387,8 @@ class HighLev(object):
                 self._data[k] = self._format_data(k, pf[k[6:]])
         else:
             raise KeyError('Unknown key {:s}.'.format(k))
-        if k in {'R200', 'Centre', 'StellarHalfMassRad'}:
-            self._data[k] = _to_proper(self._data[k], self.snap_scales)
-        elif k in {'interpInterpolatedPositions'}:
-            interp_z = np.array([z_at_value(cosmo.age, t)
-                                 for t in self.interpInterpolationTimes])
-            self._data[k] = _to_proper(self._data[k], 1 / (1 + interp_z))
+        if k in {'snepCoordinates', 'snepCoordinateDispersion'}:
+            self._data[k] = _to_proper(self._data[k], self.snep_scales) / self.h
 
     def _load_all(self):
         for k in self.prop_keys | self.pos_keys:
@@ -377,7 +414,7 @@ class HighLev(object):
     def __getattribute__(self, name):
         if name in object.__getattribute__(self, 'pos_keys') | \
            object.__getattribute__(self, 'prop_keys') | \
-           object.__getattribute__(self, 'snip_keys') | \
+           object.__getattribute__(self, 'snep_keys') | \
            object.__getattribute__(self, 'interp_keys'):
             return self.__getitem__(name)
         else:
@@ -420,4 +457,3 @@ class HighLev(object):
     def values(self):
         self._load_all()
         return self._data.values()
-
