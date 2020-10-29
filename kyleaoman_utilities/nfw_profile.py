@@ -11,7 +11,7 @@ import astropy.units as U
 
 class NFW(object):
 
-    def __init__(self, M200, z=0., CP=WMAP7, c200=None):
+    def __init__(self, M200, z=0., CP=WMAP7, c200=None, tableCP=None):
         try:
             self.M200 = M200.to(U.solMass)
         except AttributeError:
@@ -19,7 +19,7 @@ class NFW(object):
         self.CP = CP
         self.z = z
         if c200 is None:
-            self.c200 = c(self.M200, z=self.z, CP=self.CP)
+            self.c200 = c(CP=self.CP, tableCP=tableCP)(self.M200, z=self.z)
         else:
             self.c200 = c200
         self.Rs = 1.63E-2 * U.kpc * U.solMass ** (-1. / 3.) * \
