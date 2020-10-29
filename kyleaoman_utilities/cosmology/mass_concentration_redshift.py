@@ -11,10 +11,10 @@ class c(object):
 
     def __init__(self, CP=WMAP7, tableCP=None):
         self.CP = CP
-        if tableCP is None:
-            self.tableCP = self.CP
+        self.tableCP = CP if tableCP is None else tableCP
+        self._load_tables()
 
-    def _load_tables(self, tableCP=WMAP7):
+    def _load_tables(self):
         if self.tableCP not in (WMAP7, Planck13):
             raise ValueError('Supported cosmologies: WMAP7, Planck13.')
         name = {WMAP7: 'WMAP7', Planck13: 'Planck13'}[self.tableCP]
