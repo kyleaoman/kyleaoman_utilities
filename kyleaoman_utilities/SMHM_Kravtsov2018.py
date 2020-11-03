@@ -3,9 +3,9 @@ from scipy.optimize import fsolve
 import astropy.units as U
 
 
-def Mstar(Mh, z=0.0, scatter=True):
+def Mstar(Mh, z=0.0, scatter=True, ignore_z=False):
 
-    if z > 0.1:
+    if (z > 0.1).any() and not ignore_z:
         raise ValueError('Parameters only given for low redshift.')
     # note input should be Mvir as defined by Bryan & Norman 1998
     try:
