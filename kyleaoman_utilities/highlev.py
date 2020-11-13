@@ -312,7 +312,7 @@ class HighLev(object):
     _is_log = {'M200', 'MBH', 'MDM', 'Mgas', 'Mgas30kpc', 'Mstar',
                'Mstar30kpc', 'MstarInit', 'Msub', 'SFR', 'MHI', 'MHneutral'}
 
-    prop_keys = {'CenGal', 'ContFlag', 'M200', 'MBH', 'MDM', 'MGas',
+    prop_keys = {'CenGal', 'ContFlag', 'M200', 'MBH', 'MDM', 'Mgas',
                  'Mgas30kpc', 'Mstar', 'Mstar30kpc', 'MstarInit',
                  'Msub', 'R200', 'SFR', 'SHI', 'SatFlag',
                  'StellarHalfMassRad', 'Vmax', 'VmaxRadius', 'MHI',
