@@ -272,7 +272,7 @@ class HighLev(object):
         M200=U.Msun,
         MBH=U.Msun,
         MDM=U.Msun,
-        Mgas=U.Msun,
+        MGas=U.Msun,
         Mgas30kpc=U.Msun,
         Mstar=U.Msun,
         Mstar30kpc=U.Msun,
@@ -299,7 +299,7 @@ class HighLev(object):
         M200=lambda x: _replace_invalid(x, -1, np.nan),
         MBH=lambda x: _replace_invalid(x, -1, np.nan),
         MDM=lambda x: _replace_invalid(x, -1, np.nan),
-        Mgas=lambda x: _replace_invalid(x, -1, np.nan),
+        MGas=lambda x: _replace_invalid(x, -1, np.nan),
         Mgas30kpc=lambda x: _replace_invalid(x, -1, np.nan),
         Mstar=lambda x: _replace_invalid(x, -1, np.nan),
         Mstar30kpc=lambda x: _replace_invalid(x, -1, np.nan),
@@ -309,10 +309,10 @@ class HighLev(object):
         MHneutral=lambda x: _replace_invalid(x, -1, np.nan)
     )
 
-    _is_log = {'M200', 'MBH', 'MDM', 'Mgas', 'Mgas30kpc', 'Mstar',
+    _is_log = {'M200', 'MBH', 'MDM', 'MGas', 'Mgas30kpc', 'Mstar',
                'Mstar30kpc', 'MstarInit', 'Msub', 'SFR', 'MHI', 'MHneutral'}
 
-    prop_keys = {'CenGal', 'ContFlag', 'M200', 'MBH', 'MDM', 'Mgas',
+    prop_keys = {'CenGal', 'ContFlag', 'M200', 'MBH', 'MDM', 'MGas',
                  'Mgas30kpc', 'Mstar', 'Mstar30kpc', 'MstarInit',
                  'Msub', 'R200', 'SFR', 'SHI', 'SatFlag',
                  'StellarHalfMassRad', 'Vmax', 'VmaxRadius', 'MHI',
