@@ -34,6 +34,6 @@ def Delta_vir(z, CP=WMAP7):
     # Bryan & Norman (1998)
     if not isinstance(CP, FlatLambdaCDM):
         raise ValueError('Delta_vir only valid for flat cosmologies.')
-    x = CP.Om0 * np.power(1 + z, 3) * np.power(CP.efunc(z), -2) - 1
+    x = CP.Om(z) - 1
     delta_c = 18. * np.power(np.pi, 2) + 82. * x - 39. * np.power(x, 2)
     return delta_c / CP.Om(z)  # delta_b
