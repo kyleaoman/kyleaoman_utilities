@@ -15,7 +15,7 @@ def z_to_t(z_in, CP=WMAP7):
 
 def t_to_z(t_in, CP=WMAP7, z_max=25.0, z_min=0.0):
     n_table = (z_max - z_min) * 100.
-    z_table = np.linspace(z_max, z_min, n_table)
+    z_table = np.linspace(z_max, z_min, int(n_table))
     t_table = z_to_t(z_table, CP=CP)
     if np.min(t_table) > np.min(t_in):
         return t_to_z(t_in, CP=CP, z_max=z_max * 10., z_min=z_min)
