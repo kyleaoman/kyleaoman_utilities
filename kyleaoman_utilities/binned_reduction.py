@@ -4,7 +4,8 @@ import warnings
 
 import numpy as np
 from six import callable
-from collections import namedtuple, Sequence
+from collections import namedtuple
+from collections.abc import Sequence
 
 BinnedReduceResult = namedtuple('BinnedReduceResult',
                                 ('reduction', 'bin_edges', 'binnumber'))
