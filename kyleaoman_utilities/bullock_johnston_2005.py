@@ -115,5 +115,7 @@ class BJHalo(object):
         zhat = np.array([0, 0, 1])
         phihat = np.cross(rhat, zhat, axis=-_ax3)
         vphi = np.sum(phihat * vxyz, axis=_ax3)
+        raise RuntimeError('There is a bug here, Lz=r*v, not r**2*v!'
+                           ' Need to fix this and re-make plots.')
         _Lz = np.power(R, 2) * vphi
         return _Lz.to(U.kpc ** 2 * U.km * U.s ** -1)
