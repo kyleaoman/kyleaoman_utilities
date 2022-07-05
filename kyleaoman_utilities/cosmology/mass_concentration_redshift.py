@@ -15,9 +15,9 @@ class c(object):
         self._load_tables()
 
     def _load_tables(self):
-        if self.tableCP not in (WMAP7, Planck13):
+        name = self.tableCP.name
+        if name not in ('WMAP7', 'Planck13'):
             raise ValueError('Supported cosmologies: WMAP7, Planck13.')
-        name = {WMAP7: 'WMAP7', Planck13: 'Planck13'}[self.tableCP]
         sigma0_tab, M_tab_s = \
             np.genfromtxt(prefix + 'sigma0_' + name + '.dat').T
         M_tab_c, c_tab = np.genfromtxt(prefix + 'Mc_z0_' + name + '.dat').T
