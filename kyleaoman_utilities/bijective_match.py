@@ -2,16 +2,29 @@ import numpy as np
 import pandas as pd
 
 
-def cantor(x, y):
-    return np.array((x + y + 1) * (x + y) / 2 + y, dtype=int)
+def cantor(x, y, negative="raise"):
+    if negative == "raise" and (any(x < 0) or any(y < 0)):
+        raise ValueError("cantor: positive integers only.")
+    retval = np.array((x + y + 1) * (x + y) / 2 + y, dtype=int)
+    if negative == "keep":
+        # pass through a value of -1, conceptually nan
+        retval[np.logical_or(x < 0, y < 0)] = -1
+    return
 
 
-def icantor(z):
+def icantor(z, negative="raise"):
+    if negative == "raise" and any(z < 0):
+        raise ValueError("icantor: positive integers only.")
     w = np.floor((np.sqrt(8 * z + 1) - 1) / 2)
     t = (w * w + w) / 2
     y = z - t
     x = w - y
-    return np.array(x, dtype=int), np.array(y, dtype=int)
+    retval = np.array(x, dtype=int), np.array(y, dtype=int)
+    if negative == "keep":
+        # pass through a value of -1, conceptually nan
+        retval[0][z < 0] = -1
+        retval[1][x < 0] = -1
+    return retval
 
 
 def best_match(df, on=None, filterneg=False):
@@ -25,7 +38,7 @@ def best_match(df, on=None, filterneg=False):
     return candidate_matches[mask][counts[mask].argmax()]
 
 
-def bijective_match(pid_1, fof_1, sub_1, pid_2, fof_2, sub_2):
+def bijective_match(pid_1, fof_1, sub_1, pid_2, fof_2, sub_2, label_1="1", label_2="2"):
     mask1 = np.logical_and.reduce((fof_1 >= 1, sub_1 >= 0, sub_1 != 2**30))
     mask2 = np.logical_and.reduce((fof_2 >= 1, sub_2 >= 0, sub_2 != 2**30))
     sim1 = pd.DataFrame(
@@ -65,26 +78,26 @@ def bijective_match(pid_1, fof_1, sub_1, pid_2, fof_2, sub_2):
     )
     return (
         np.rec.fromarrays(
-            icantor(sim1_matches.index.to_numpy())
-            + icantor(sim1_matches["sid2"].to_numpy())
+            icantor(sim1_matches.index.to_numpy(), negative="keep")
+            + icantor(sim1_matches["sid2"].to_numpy(), negative="keep")
             + (sim1_matches["bijective"],),
             dtype=[
-                ("fof_1", int),
-                ("sub_1", int),
-                ("fof_2", int),
-                ("sub_2", int),
+                (f"fof_{label_1}", int),
+                (f"sub_{label_1}", int),
+                (f"fof_{label_2}", int),
+                (f"sub_{label_2}", int),
                 ("bijective", bool),
             ],
         ),
         np.rec.fromarrays(
-            icantor(sim2_matches.index.to_numpy())
-            + icantor(sim2_matches["sid1"].to_numpy())
+            icantor(sim2_matches.index.to_numpy(), negative="keep")
+            + icantor(sim2_matches["sid1"].to_numpy(), negative="keep")
             + (sim2_matches["bijective"],),
             dtype=[
-                ("fof_2", int),
-                ("sub_2", int),
-                ("fof_1", int),
-                ("sub_1", int),
+                (f"fof_{label_2}", int),
+                (f"sub_{label_2}", int),
+                (f"fof_{label_1}", int),
+                (f"sub_{label_1}", int),
                 ("bijective", bool),
             ],
         ),
