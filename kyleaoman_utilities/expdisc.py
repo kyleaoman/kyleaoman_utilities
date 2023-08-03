@@ -189,7 +189,7 @@ def expdisc_vcirc(
                 10 * Rd,
                 0,
                 10 * Rd,
-            )
+            )[0]
             for Ri in R_samples
         ]
     )
