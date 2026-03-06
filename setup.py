@@ -8,7 +8,7 @@ setup(
     author='Kyle Oman',
     author_email='kyle.a.oman@durham.ac.uk',
     license='',
-    packages=['kyleaoman_utilities'],
+    packages=['kyleaoman_utilities', 'kyleaoman_utilities.cosmology'],
     install_requires=['numpy', 'astropy', 'matplotlib', 'h5py'],
     include_package_data=True,
     zip_safe=False
